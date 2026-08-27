@@ -1,0 +1,58 @@
+cxx      := env_var_or_default("CXX", "clang++")
+cxxflags := "-std=c++23 -Wall -Wextra -g -O0"
+target   := "app"
+builddir := "build"
+
+default:
+    @just --list
+
+fmt:
+    find src \( -name '*.cpp' -o -name '*.cppm' -o -name '*.hpp' -o -name '*.h' \) -print0 | xargs -0 clang-format -i
+    nixfmt flake.nix shell.nix
+
+# BMI стандартного модуля плюс объектник к нему. Пересобирается, когда
+# сменился компилятор или флаги: .pcm привязан к ним намертво.
+std-module:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    : "${STD_MODULE_SRC:?пусто — ты не в nix-шелле}"
+    mkdir -p {{builddir}}
+    stamp="{{builddir}}/.toolchain"
+    want="$({{cxx}} --version | head -1) {{cxxflags}} $STD_MODULE_SRC"
+    if [[ -f "{{builddir}}/std.pcm" && -f "$stamp" && "$(cat "$stamp")" == "$want" ]]; then
+        exit 0
+    fi
+    echo "собираю модуль std"
+    # -x c++-module: расширение .cc само по себе за модуль не считается.
+    # -isystem…/backward: без него не находится <strstream>, который std.cc тянет.
+    {{cxx}} {{cxxflags}} -x c++-module -Wno-reserved-module-identifier \
+        -isystem"$GCC_CXX_INCLUDE/backward" \
+        --precompile -o "{{builddir}}/std.pcm" "$STD_MODULE_SRC"
+    {{cxx}} {{cxxflags}} -c -o "{{builddir}}/std.o" "{{builddir}}/std.pcm"
+    printf '%s\n' "$want" > "$stamp"
+
+check: std-module
+    {{cxx}} {{cxxflags}} -Werror -fmodule-file=std={{builddir}}/std.pcm -fsyntax-only src/*.cpp
+
+tidy: std-module
+    clang-tidy src/*.cpp
+
+build: std-module
+    {{cxx}} {{cxxflags}} -fmodule-file=std={{builddir}}/std.pcm -o {{target}} src/*.cpp {{builddir}}/std.o
+
+run: build
+    ./{{target}}
+
+debug: build
+    gf2 ./{{target}}
+
+gdb: build
+    gdb ./{{target}}
+
+memcheck: build
+    valgrind --leak-check=full ./{{target}}
+
+clean:
+    rm -rf {{builddir}} {{target}} src/*.o
+
+all: fmt check build

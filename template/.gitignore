@@ -1,0 +1,6 @@
+compile_flags.txt
+build/
+*.o
+app
+.direnv/
+result

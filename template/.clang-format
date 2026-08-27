@@ -1,0 +1,20 @@
+# Спокойный вариант: 4 пробела, скобки не переносятся, ничего не выравнивается
+# в колонки. Ближе к тому, что пишут руками, чем к канону ядра.
+BasedOnStyle: LLVM
+Language: Cpp
+Standard: Latest
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ColumnLimit: 100
+BreakBeforeBraces: Attach
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AlignConsecutiveDeclarations: false
+AlignConsecutiveAssignments: false
+AlignTrailingComments: false
+PointerAlignment: Right
+SpaceAfterCStyleCast: true
+SortIncludes: false
+AccessModifierOffset: -4
