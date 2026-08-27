@@ -37,7 +37,7 @@ int main() {
     for (auto i : std::views::iota(std::size_t{0}, buckets.size())) {
         // saturate_cast — из C++26. Обрезает по границам типа вместо UB
         // или молчаливого заворачивания.
-        const auto width = std::saturate_cast<int>(buckets[i] / 2000);
+        const auto width = std::min<std::size_t>(buckets[i] / 2000, 60);
         const std::size_t hi_label = (i + 1 == buckets.size()) ? 100 : i * 10 + 9;
         std::println("{:3}-{:3} {:>8} {}", i * 10, hi_label, buckets[i],
                      std::string(static_cast<std::size_t>(width), '#'));
